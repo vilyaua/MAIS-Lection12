@@ -1,0 +1,61 @@
+services:
+  a2a:
+    image: research-agent-l12:latest
+    build: .
+    env_file:
+      - .env
+    environment:
+      - A2A_HOST=a2a
+    ports:
+      - "8904:8904"
+    volumes:
+      - ./data:/app/data
+      - ./index:/app/index
+      - ./logs:/app/logs
+    entrypoint: ["python", "a2a_server.py"]
+
+  web:
+    image: research-agent-l12:latest
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - A2A_HOST=a2a
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    entrypoint: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      - a2a
+
+  # Interactive CLI — run with: docker compose --profile cli run --rm supervisor
+  supervisor:
+    image: research-agent-l12:latest
+    build: .
+    stdin_open: true
+    tty: true
+    env_file:
+      - .env
+    environment:
+      - A2A_HOST=a2a
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    entrypoint: ["python", "main.py"]
+    depends_on:
+      - a2a
+    profiles: ["cli"]
+
+  # One-off ingestion
+  ingest:
+    image: research-agent-l12:latest
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./index:/app/index
+    entrypoint: ["python", "ingest.py"]
+    profiles: ["tools"]
