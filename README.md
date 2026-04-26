@@ -59,6 +59,24 @@ Services: `a2a` (:8904), `web` (:8000).
 2. Create project, get API keys
 3. Add keys to `.env`
 4. Run `python upload_prompts.py` to seed prompts
-5. Set up 2 LLM-as-a-Judge evaluators in Langfuse UI
+5. Set up LLM-as-a-Judge evaluators in Langfuse UI
+
+### LLM-as-a-Judge Evaluators
+
+4 evaluators configured in Langfuse:
+
+| Evaluator | Score Type | Purpose |
+|-----------|-----------|---------|
+| answer-relevancy | numeric (0–1) | Does the output address the query? |
+| report-completeness | boolean | Is the report well-structured with all required sections? |
+| faithfulness | numeric (0–1) | Are claims grounded in cited sources? |
+| conciseness | categorical | Is the output concise, adequate, or verbose? |
+
+### Resilience
+
+- A2A client timeout: 300s
+- Graceful fallbacks on agent timeout/error (critic auto-approves, planner returns minimal plan)
+- Tightened recursion limits to prevent excessive search loops
+- Supervisor always calls `save_report` even on degraded results (with ⚠️ Limitations section)
 
 See [`CLAUDE.md`](CLAUDE.md) for full architecture and implementation details.
