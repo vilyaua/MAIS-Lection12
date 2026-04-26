@@ -5,6 +5,7 @@ System prompt loaded from Langfuse.
 """
 
 from langchain.agents import create_agent
+from langfuse.langchain import CallbackHandler
 
 from config import Settings
 from langfuse_prompts import get_system_prompt
@@ -17,6 +18,7 @@ settings = Settings()
 async def run_planner(request: str, tools: list | None = None) -> str:
     """Run the planner agent and return formatted plan."""
     prompt = get_system_prompt("planner-prompt")
+    handler = CallbackHandler()
     planner = create_agent(
         model=settings.model_powerful,
         tools=tools or PLANNER_TOOLS,
@@ -26,7 +28,11 @@ async def run_planner(request: str, tools: list | None = None) -> str:
     )
     result = await planner.ainvoke(
         {"messages": [{"role": "user", "content": request}]},
-        {"recursion_limit": 30},
+        {
+            "recursion_limit": 30,
+            "callbacks": [handler],
+            "metadata": {"langfuse_tags": ["research-agent", "planner"]},
+        },
     )
     structured: ResearchPlan = result["structured_response"]
     return (

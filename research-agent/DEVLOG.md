@@ -1,5 +1,14 @@
 # DEVLOG
 
+## 2026-04-26 — Finalize & add sub-agent tracing (v0.1.3)
+
+- Added Langfuse `CallbackHandler` to all sub-agents (planner, researcher, critic) for per-agent tracing
+- Tags passed via `metadata` dict (not constructor) — confirmed correct for langfuse SDK v4
+- Verified actual API signatures against installed versions:
+  - `create_agent(system_prompt=...)` — confirmed (langchain 1.2.15)
+  - `HumanInTheLoopMiddleware(interrupt_on={"save_report": True})` — confirmed
+  - `CallbackHandler()` — langfuse 4.5.1, session/user/tags via config metadata
+
 ## 2026-04-26 — Resilience & production hardening (v0.1.2)
 
 - A2A client timeout: 120s → 300s to handle slow web searches
