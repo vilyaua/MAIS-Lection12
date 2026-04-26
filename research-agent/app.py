@@ -21,7 +21,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from langchain_core.messages import AIMessage, ToolMessage
-from langfuse.callback import CallbackHandler
+from langfuse.langchain import CallbackHandler
 from langgraph.types import Command
 
 from config import APP_VERSION, Settings
@@ -51,13 +51,8 @@ pending_interrupt: dict | None = None
 USER_ID = "web-user"
 
 
-def _create_langfuse_handler(trace_name: str = "web-query") -> CallbackHandler:
-    return CallbackHandler(
-        session_id=current_session_id,
-        user_id=USER_ID,
-        trace_name=trace_name,
-        tags=["research-agent", "web"],
-    )
+def _create_langfuse_handler() -> CallbackHandler:
+    return CallbackHandler()
 
 
 def _format_tool_event(msg) -> dict | None:
@@ -87,6 +82,11 @@ def _sync_stream(thread_id: str, input_data, langfuse_handler: CallbackHandler):
         "configurable": {"thread_id": thread_id},
         "recursion_limit": 100,
         "callbacks": [langfuse_handler],
+        "metadata": {
+            "langfuse_session_id": current_session_id,
+            "langfuse_user_id": USER_ID,
+            "langfuse_tags": ["research-agent", "web"],
+        },
     }
 
     for chunk in supervisor.stream(input_data, config=config, stream_mode="updates"):
@@ -148,7 +148,7 @@ async def _stream_response(prompt: str):
     sid = current_thread_id
 
     logger.info("[%s] New session — query: %s", sid[:8], prompt[:80])
-    langfuse_handler = _create_langfuse_handler(trace_name=prompt[:80])
+    langfuse_handler = _create_langfuse_handler()
 
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue = asyncio.Queue()
@@ -193,7 +193,7 @@ async def _stream_resume(decision: dict):
     global pending_interrupt
     thread_id = pending_interrupt["thread_id"] if pending_interrupt else current_thread_id
     pending_interrupt = None
-    langfuse_handler = _create_langfuse_handler(trace_name="hitl-resume")
+    langfuse_handler = _create_langfuse_handler()
 
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue = asyncio.Queue()

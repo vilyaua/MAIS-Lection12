@@ -10,7 +10,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from langchain_core.messages import AIMessage, ToolMessage
-from langfuse.callback import CallbackHandler
+from langfuse.langchain import CallbackHandler
 from langgraph.types import Command, Interrupt
 
 from config import APP_VERSION, Settings
@@ -34,14 +34,9 @@ USER_ID = "cli-user"
 SESSION_ID = str(uuid.uuid4())
 
 
-def _create_langfuse_handler(session_id: str, trace_name: str = "research-query") -> CallbackHandler:
-    """Create a Langfuse CallbackHandler with session and user tracking."""
-    return CallbackHandler(
-        session_id=session_id,
-        user_id=USER_ID,
-        trace_name=trace_name,
-        tags=["research-agent", "cli"],
-    )
+def _create_langfuse_handler() -> CallbackHandler:
+    """Create a Langfuse CallbackHandler."""
+    return CallbackHandler()
 
 
 def _print_header():
@@ -126,6 +121,11 @@ def _handle_interrupt(interrupts: list[Interrupt], thread_id: str, langfuse_hand
             "configurable": {"thread_id": thread_id},
             "recursion_limit": 100,
             "callbacks": [langfuse_handler],
+            "metadata": {
+                "langfuse_session_id": SESSION_ID,
+                "langfuse_user_id": USER_ID,
+                "langfuse_tags": ["research-agent", "cli"],
+            },
         }
         result = supervisor.invoke(
             Command(resume={"decisions": decisions}),
@@ -154,6 +154,11 @@ def _stream_and_handle(thread_id: str, input_data: dict, langfuse_handler: Callb
         "configurable": {"thread_id": thread_id},
         "recursion_limit": 100,
         "callbacks": [langfuse_handler],
+        "metadata": {
+            "langfuse_session_id": SESSION_ID,
+            "langfuse_user_id": USER_ID,
+            "langfuse_tags": ["research-agent", "cli"],
+        },
     }
 
     for chunk in supervisor.stream(input_data, config=config, stream_mode="updates"):
@@ -201,7 +206,7 @@ def main():
             break
 
         thread_id = str(uuid.uuid4())
-        langfuse_handler = _create_langfuse_handler(SESSION_ID, trace_name=user_input[:80])
+        langfuse_handler = _create_langfuse_handler()
         _stream_and_handle(
             thread_id,
             {"messages": [("user", user_input)]},
