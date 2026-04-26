@@ -39,6 +39,20 @@ def _create_langfuse_handler() -> CallbackHandler:
     return CallbackHandler()
 
 
+def _make_config(thread_id: str, langfuse_handler: CallbackHandler) -> dict:
+    """Build the config dict with Langfuse metadata."""
+    return {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 100,
+        "callbacks": [langfuse_handler],
+        "metadata": {
+            "langfuse_session_id": SESSION_ID,
+            "langfuse_user_id": USER_ID,
+            "langfuse_tags": ["research-agent", "cli"],
+        },
+    }
+
+
 def _print_header():
     print(f"Multi-Agent Research System v{APP_VERSION} (A2A + Langfuse)")
     print(f"Model: {settings.model_powerful} / {settings.model_fast}")
@@ -117,16 +131,7 @@ def _handle_interrupt(interrupts: list[Interrupt], thread_id: str, langfuse_hand
                 input("  Reason (optional): ").strip()
                 decisions.append({"type": "reject"})
 
-        config = {
-            "configurable": {"thread_id": thread_id},
-            "recursion_limit": 100,
-            "callbacks": [langfuse_handler],
-            "metadata": {
-                "langfuse_session_id": SESSION_ID,
-                "langfuse_user_id": USER_ID,
-                "langfuse_tags": ["research-agent", "cli"],
-            },
-        }
+        config = _make_config(thread_id, langfuse_handler)
         result = supervisor.invoke(
             Command(resume={"decisions": decisions}),
             config=config,
@@ -150,16 +155,7 @@ def _print_final_messages(result: dict):
 
 
 def _stream_and_handle(thread_id: str, input_data: dict, langfuse_handler: CallbackHandler) -> None:
-    config = {
-        "configurable": {"thread_id": thread_id},
-        "recursion_limit": 100,
-        "callbacks": [langfuse_handler],
-        "metadata": {
-            "langfuse_session_id": SESSION_ID,
-            "langfuse_user_id": USER_ID,
-            "langfuse_tags": ["research-agent", "cli"],
-        },
-    }
+    config = _make_config(thread_id, langfuse_handler)
 
     for chunk in supervisor.stream(input_data, config=config, stream_mode="updates"):
         for node_name, node_output in chunk.items():

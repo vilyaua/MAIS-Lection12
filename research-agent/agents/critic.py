@@ -7,6 +7,7 @@ System prompt loaded from Langfuse.
 from datetime import datetime
 
 from langchain.agents import create_agent
+from langfuse.langchain import CallbackHandler
 
 from config import Settings
 from langfuse_prompts import get_system_prompt
@@ -22,6 +23,7 @@ async def run_critic(findings: str, tools: list | None = None) -> str:
         "critic-prompt",
         current_date=datetime.now().strftime("%Y-%m-%d"),
     )
+    handler = CallbackHandler()
     critic = create_agent(
         model=settings.model_powerful,
         tools=tools or CRITIC_TOOLS,
@@ -31,7 +33,11 @@ async def run_critic(findings: str, tools: list | None = None) -> str:
     )
     result = await critic.ainvoke(
         {"messages": [{"role": "user", "content": findings}]},
-        {"recursion_limit": 15},
+        {
+            "recursion_limit": 15,
+            "callbacks": [handler],
+            "metadata": {"langfuse_tags": ["research-agent", "critic"]},
+        },
     )
     structured: CritiqueResult = result["structured_response"]
     parts = [
