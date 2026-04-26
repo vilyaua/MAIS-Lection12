@@ -31,7 +31,7 @@ async def run_critic(findings: str, tools: list | None = None) -> str:
     )
     result = await critic.ainvoke(
         {"messages": [{"role": "user", "content": findings}]},
-        {"recursion_limit": 30},
+        {"recursion_limit": 15},
     )
     structured: CritiqueResult = result["structured_response"]
     parts = [

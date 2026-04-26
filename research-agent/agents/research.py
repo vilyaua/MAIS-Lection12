@@ -24,6 +24,6 @@ async def run_researcher(request: str, tools: list | None = None) -> str:
     )
     result = await researcher.ainvoke(
         {"messages": [{"role": "user", "content": request}]},
-        {"recursion_limit": 50},
+        {"recursion_limit": 30},
     )
     return result["messages"][-1].content

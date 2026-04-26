@@ -32,7 +32,7 @@ async def delegate_a2a(skill_id: str, content: str, base_url: str) -> str:
     """
     config = ClientConfig(
         streaming=False,
-        httpx_client=httpx.AsyncClient(timeout=httpx.Timeout(120.0)),
+        httpx_client=httpx.AsyncClient(timeout=httpx.Timeout(300.0)),
     )
     client = await create_client(agent=base_url, client_config=config)
 
